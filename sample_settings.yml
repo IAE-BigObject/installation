@@ -10,7 +10,7 @@ Database:
   Driver: "postgres"
   HostIP: "%_IP_ADDR_%"
   HostPort: 15432
-  Releases : "https://mega.cloudwatch.net/index.php/s/cMcjPZSP3DpWwDE/download/sys_db_releases_evo.yml"
+  Releases : "https://raw.githubusercontent.com/IAE-BigObject/SQL/main/sys_db_releases_evo.yml"
 StreamerX:
   Server: "localhost"
   Port: 9089
