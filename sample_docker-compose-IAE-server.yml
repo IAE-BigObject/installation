@@ -1,0 +1,88 @@
+version: '3'
+services:
+    db:
+        image: postgres:9
+        container_name: server-db
+        restart: unless-stopped
+        environment:
+          POSTGRES_DB: example
+          POSTGRES_USER: example
+          POSTGRES_PASSWORD: %_PW_POSTGRES_%
+          TZ: Asia/Taipei
+        ports:
+          - "15432:5432"
+        volumes:
+          - ./volumes/postgresql/initdb.d:/docker-entrypoint-initdb.d
+          #  - ./volumes/postgresql/data:/var/lib/postgresql/data
+          - ./volumes/postgresql/postgresql.conf:/etc/postgresql/postgresql.conf
+        networks:
+            - IAE-intranet
+
+    IAE-server:
+        image: bigobject/iae-server:1.11.7
+        container_name: "IAE-server" 
+        restart: unless-stopped
+        ports:
+          - "%_PORT_HTTP_%:8081"
+        volumes:
+          - ./volumes/IAE-server/logs:/srv/IAE-server/logs
+          - ./settings:/srv/IAE-server/settings
+          #- ./assets:/srv/IAE-server/assets
+          - ./svt:/srv/IAE-server/svt
+          - /var/run/docker.sock:/var/run/docker.sock
+          - ./bowatch/:/srv/IAE-server/bowatch
+        working_dir: /srv/IAE-server
+        environment:
+           ADVERTISE_ADDR: "%_IP_ADDR_%"
+           NAGIOS_API_URL: "nagios-api:8000"
+        networks:
+            - IAE-intranet
+
+    test-svt:
+        image: bigobject/streamer
+        container_name: test-svt
+        restart: unless-stopped
+        volumes:
+           - ./svt:/streamer/svt
+        environment:
+           TZ: Asia/Taipei
+           RUN_BASH: 'true'
+        networks:
+            - IAE-intranet
+
+    bowatch:
+        image: bigobject/nagios:1.2
+        container_name: bowatch
+        restart: unless-stopped
+        volumes:
+            - ./bowatch/opt:/opt
+            - ./bowatch/nagios_var:/usr/local/nagios/var
+            - ./bowatch/nagios_etc:/usr/local/nagios/etc/custom
+        ports:
+            - "1080:80"
+        environment:
+            - TZ=Asia/Taipei
+            - NAGIOS_PSWD=nagios
+        working_dir: /opt
+        stdin_open: true
+        tty: true
+        command: bash  
+        networks:
+            - IAE-intranet
+
+    nagios-api:
+        image: bigobject/nagios-api:1.0
+        container_name: nagios-api
+        restart: unless-stopped
+        volumes:
+            - ./bowatch/nagios_var:/nagios/var:ro
+        ports:
+            - "5408:8000"
+        command: nagios-api -p 8000 -s /nagios/var/status.dat
+        networks:
+            - IAE-intranet
+                
+networks:
+      IAE-intranet:
+          name: IAE-intranet
+
